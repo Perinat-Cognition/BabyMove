@@ -362,11 +362,12 @@ def build_plot(
     # ------------------------------------------------------------------
     # Sauvegarde
     # ------------------------------------------------------------------
+    
+    output_dir = input_csv.parent / "graphs"
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     if output_png is None:
-        output_png = input_csv.with_name(
-            f"{input_csv.stem}_graph.png"
-        )
+        output_png = output_dir / f"{keypoint.replace(' ', '_').lower()}_trajectories.png"
 
     fig.savefig(
         output_png,
@@ -412,10 +413,16 @@ def main() -> None:
     )
 
     parser.add_argument(
-        "--conf",
+        "--confidence",
         type=float,
         default=0.5,
         help="Seuil de confiance pour les données lissées (entre 0 et 1).",
+    )
+
+    parser.add_argument(
+        "--all-keypoints",
+        action="store_true",
+        help="Génère un graphique pour chaque keypoint.",
     )
 
     args = parser.parse_args()
@@ -456,12 +463,23 @@ def main() -> None:
     # Générer le graphique
     # ------------------------------------------------------------------
 
-    build_plot(
-        input_csv,
-        args.keypoint,
-        args.confidence,
-        args.output
-    )
+    if args.all_keypoints:
+        keypoints = get_keypoints_from_csv(input_csv)
+        for kp in keypoints:
+            print(f"\nGénération du graphique pour le keypoint : {kp}")
+            build_plot(
+                input_csv,
+                kp,
+                args.confidence,
+                args.output,
+            )
+    else:
+        build_plot(
+            input_csv,
+            args.keypoint,
+            args.confidence,
+            args.output
+        )
 
 
 if __name__ == "__main__":

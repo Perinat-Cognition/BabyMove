@@ -30,6 +30,38 @@ def _default_input(name: str) -> Path:
     """Construit le chemin par défaut vers le fichier CSV."""
     return Path("results") / name / f"baby_{name}_clean.csv"
 
+def get_results_names() -> list[str]:
+    """Retourne la liste des noms de dossiers dans results/."""
+    results_dir = Path("results")
+    if not results_dir.exists():
+        return []
+    return [
+        d.name for d in results_dir.iterdir()
+        if d.is_dir() and (d / f"baby_{d.name}_clean.csv").exists()
+    ]
+
+def get_keypoints_from_csv(csv_path: Path) -> list[str]:
+    """Retourne la liste des keypoints présents dans le CSV."""
+    df = pd.read_csv(csv_path)
+    if "keypoint" not in df.columns:
+        raise ValueError(
+            f"La colonne 'keypoint' est absente du CSV : {csv_path}"
+        )
+    return df["keypoint"].dropna().unique().tolist()
+
+def ask_from_list(options: list[str]) -> str:
+    """Demande à l'utilisateur de choisir un élément dans une liste."""
+    print("\nChoisissez un élément :")
+    for i, option in enumerate(options, start=1):
+        print(f"{i}. {option}")
+
+    while True:
+        choice = input("Entrez le numéro correspondant : ")
+        if choice.isdigit():
+            index = int(choice) - 1
+            if 0 <= index < len(options):
+                return options[index]
+        print("Choix invalide. Veuillez réessayer.")
 
 def plot_raw_with_confidence(
     ax,
@@ -381,22 +413,16 @@ def main() -> None:
     args = parser.parse_args()
 
     # ------------------------------------------------------------------
-    # Vérification des arguments
-    # ------------------------------------------------------------------
-
-    if args.input is None and args.name is None:
-        parser.error(
-            "Fournir --name ou --input."
-        )
-
-    if args.keypoint is None:
-        parser.error(
-            "Fournir --keypoint."
-        )
-
-    # ------------------------------------------------------------------
     # Déterminer le fichier d'entrée
     # ------------------------------------------------------------------
+
+    if args.name is None:
+        results = get_results_names()
+        if not results:
+            parser.error(
+                "Aucun dossier dans results/ contenant un CSV."
+            )
+        args.name = ask_from_list(results)
 
     input_csv = (
         args.input
@@ -409,6 +435,14 @@ def main() -> None:
         parser.error(
             f"Fichier CSV introuvable : {input_csv}"
         )
+
+    if not args.keypoint:
+        keypoints = get_keypoints_from_csv(input_csv)
+        if not keypoints:
+            parser.error(
+                f"Aucun keypoint trouvé dans le CSV : {input_csv}"
+            )
+        args.keypoint = ask_from_list(keypoints)
 
     # ------------------------------------------------------------------
     # Générer le graphique

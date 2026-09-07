@@ -84,7 +84,7 @@ def plot_raw_with_confidence(
         time,
         values,
         color=color,
-        alpha=0.25,
+        alpha=0.75,
         linewidth=0.8,
     )
 
@@ -226,6 +226,7 @@ def plot_smooth_with_gaps(
 def build_plot(
     input_csv: Path,
     keypoint: str,
+    confidence_threshold: float = 0.5,
     output_png: Path | None = None,
 ) -> None:
     """Charge le CSV et génère le graphique."""
@@ -278,7 +279,7 @@ def build_plot(
     # Données lissées
     # ------------------------------------------------------------------
 
-    confidence_mask = confidence >= 0.5
+    confidence_mask = confidence >= confidence_threshold
 
     x_smooth = df["x_clean"].where(confidence_mask)
     y_smooth = df["y_clean"].where(confidence_mask)
@@ -410,6 +411,13 @@ def main() -> None:
         help="Chemin de sortie PNG.",
     )
 
+    parser.add_argument(
+        "--conf",
+        type=float,
+        default=0.5,
+        help="Seuil de confiance pour les données lissées (entre 0 et 1).",
+    )
+
     args = parser.parse_args()
 
     # ------------------------------------------------------------------
@@ -451,7 +459,8 @@ def main() -> None:
     build_plot(
         input_csv,
         args.keypoint,
-        args.output,
+        args.confidence,
+        args.output
     )
 
 

@@ -146,7 +146,7 @@ def create_visualization(input_folder, progress_callback=None):
 
     output_path = (
         folder /
-        f"visualization_{input_folder}.avi"
+        f"visualization_{input_folder}.mp4"
     )
 
     # --------------------------------------------------------
@@ -202,9 +202,7 @@ def create_visualization(input_folder, progress_callback=None):
     # VideoWriter
     # --------------------------------------------------------
 
-    fourcc = cv2.VideoWriter_fourcc(
-        *"XVID"
-    )
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 
     writer = cv2.VideoWriter(
         str(output_path),

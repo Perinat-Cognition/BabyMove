@@ -513,7 +513,7 @@ class PoseApp(TkinterDnD.Tk):
 
             if not answer:
 
-                video_path = self.output_dir / f"visualization_{self.video_name}.avi"
+                video_path = self.output_dir / f"visualization_{self.video_name}.mp4"
 
                 if video_path.exists():
                     self.after(
@@ -526,6 +526,14 @@ class PoseApp(TkinterDnD.Tk):
                     self.after(
                         0,
                         lambda: self.process_baby_data(baby_csv)
+                    )
+                    return
+
+                all_csv = self.output_dir / f"{self.video_name}.csv"
+                if all_csv.exists():
+                    self.after(
+                        0,
+                        lambda: self.processing_finished(all_csv)
                     )
                     return
                 else:
@@ -710,7 +718,7 @@ class PoseApp(TkinterDnD.Tk):
             )
 
             # Supprimer les fichiers intermédiaires
-            files = [self.output_dir.glob(f"{self.video_name}.csv"), self.output_dir.glob(f"{self.video_name}.avi"), self.output_dir.glob(f"baby_{self.video_name}.csv")]
+            files = [self.output_dir.glob(f"{self.video_name}.csv"), self.output_dir.glob(f"{self.video_name}.mp4"), self.output_dir.glob(f"baby_{self.video_name}.csv")]
 
             for file in files:
                 for f in file:

@@ -85,7 +85,7 @@ class IDSelectionWindow(tk.Toplevel):
         self.parent = parent
         self.all_csv = Path(all_csv)
         self.output_dir = RESULTS_DIR / output_folder
-        self.video_path = self.output_dir / f"{output_folder}.avi"
+        self.video_path = self.output_dir / f"{output_folder}.mp4"
 
         self.title("Sélection du bébé")
         self.geometry("1100x800")

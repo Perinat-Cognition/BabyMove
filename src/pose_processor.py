@@ -4,24 +4,27 @@ import torch
 from ultralytics import YOLO
 import cv2
 
-
-BODY_KEYPOINTS = {
+LEFT_SIDE_KEYPOINTS = {
     0: "Nose",
     1: "Left Eye",
-    2: "Right Eye",
     3: "Left Ear",
-    4: "Right Ear",
     5: "Left Shoulder",
-    6: "Right Shoulder",
     7: "Left Elbow",
-    8: "Right Elbow",
     9: "Left Wrist",
-    10: "Right Wrist",
     11: "Left Hip",
-    12: "Right Hip",
     13: "Left Knee",
-    14: "Right Knee",
     15: "Left Ankle",
+}
+
+RIGHT_SIDE_KEYPOINTS = {
+    0: "Nose",
+    2: "Right Eye",
+    4: "Right Ear",
+    6: "Right Shoulder",
+    8: "Right Elbow",
+    10: "Right Wrist",
+    12: "Right Hip",
+    14: "Right Knee",
     16: "Right Ankle",
 }
 
@@ -37,6 +40,7 @@ DEVICE = 0 if torch.cuda.is_available() else "cpu"
 
 def process_video(
     video_path,
+    direction,
     results_dir=RESULTS_DIR,
     model_path=MODEL_PATH,
     progress_callback=None
@@ -44,6 +48,8 @@ def process_video(
     video_path = Path(video_path)
     results_dir = Path(results_dir)
     results_dir.mkdir(parents=True, exist_ok=True)
+
+    selected_keypoints = LEFT_SIDE_KEYPOINTS if direction == "left" else RIGHT_SIDE_KEYPOINTS
 
     video_name = video_path.stem
 
@@ -115,15 +121,15 @@ def process_video(
                             if confidences is not None
                             else None
                         )
-
-                        writer.writerow([
-                            frame,
-                            int(person_id),
-                            BODY_KEYPOINTS.get(kp_idx, "Unknown"),
-                            float(x),
-                            float(y),
-                            float(conf) if conf is not None else None
-                        ])
+                        if kp_idx in selected_keypoints:
+                            writer.writerow([
+                                frame,
+                                int(person_id),
+                                selected_keypoints.get(kp_idx, "Unknown"),
+                                float(x),
+                                float(y),
+                                float(conf) if conf is not None else None
+                            ])
 
             # Mise à jour de la progression
             if progress_callback and total_frames > 0:

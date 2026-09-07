@@ -72,6 +72,8 @@ class PoseApp(TkinterDnD.Tk):
         self.video_name = None
         self.video_path = None
 
+        self.baby_direction = None
+
         self.output_dir = None
 
         self.processing = False
@@ -387,12 +389,59 @@ class PoseApp(TkinterDnD.Tk):
 
         self.video_path = path
         self.video_name = path.stem
+        if "g" in self.video_name.lower():
+            self.baby_direction = "left"
+        elif "d" in self.video_name.lower():
+            self.baby_direction = "right"
+        else:
+            self.ask_baby_direction()
 
         self.output_dir = RESULTS_DIR / self.video_name
 
-        self.video_label.config(text=f"Vidéo sélectionnée : {self.video_name}")
+        direction_text = (
+            "gauche" if self.baby_direction == "left" else "droite"
+        )
+
+        self.video_label.config(text=f"Vidéo sélectionnée : {self.video_name}\nDirection du bébé : {direction_text}")
         self.start_button.config(state="normal")
         self.status_label.config(text="Vidéo prête à être analysée.")
+
+    def ask_baby_direction(self):
+        window = tk.Toplevel(self)
+        window.title("Direction du bébé")
+        window.geometry("350x150")
+        window.resizable(False, False)
+        window.transient(self)
+        window.grab_set()
+
+        tk.Label(
+            window,
+            text="Dans quelle direction le bébé fait-il face ?",
+            font=("Arial", 11)
+        ).pack(pady=20)
+
+        button_frame = tk.Frame(window)
+        button_frame.pack()
+
+        def select_direction(direction):
+            self.baby_direction = direction
+            window.destroy()
+
+        tk.Button(
+            button_frame,
+            text="← Gauche",
+            width=12,
+            command=lambda: select_direction("left")
+        ).pack(side="left", padx=10)
+
+        tk.Button(
+            button_frame,
+            text="Droite →",
+            width=12,
+            command=lambda: select_direction("right")
+        ).pack(side="left", padx=10)
+
+        self.wait_window(window)
 
     def on_drop(self, event):
 
@@ -488,6 +537,9 @@ class PoseApp(TkinterDnD.Tk):
                             "L'analyse YOLO va être relancée."
                         )
                     )
+
+        if not self.baby_direction:
+            self.ask_baby_direction()
         
         self.processing = True
 
@@ -539,6 +591,7 @@ class PoseApp(TkinterDnD.Tk):
         try:
             all_csv = process_video(
                 self.video_path,
+                direction=self.baby_direction,
                 results_dir=RESULTS_DIR,
                 model_path= self.model_dir / MODELS[self.model_variable.get()],
                 progress_callback=self.update_progress
@@ -572,13 +625,7 @@ class PoseApp(TkinterDnD.Tk):
         self.status_label.config(text="Analyse YOLO terminée.")
 
         # Vidéo générée par YOLO
-        generated_video = self.output_dir / f"{self.video_name}.avi"
-
-        # Nouveau nom
-        output_video = (
-            self.output_dir /
-            f"{self.video_name}.avi"
-        )
+        generated_video = self.output_dir / f"{self.video_name}.mp4"
 
         # Vérifier que la vidéo existe
         if not generated_video.exists():
@@ -592,21 +639,6 @@ class PoseApp(TkinterDnD.Tk):
                     "mais la vidéo annotée n'a pas été trouvée.\n\n"
                     f"Fichier attendu :\n{generated_video}"
                 )
-            )
-
-            return
-
-        # Renommer la vidéo
-        try:
-            generated_video.rename(output_video)
-
-        except OSError as error:
-
-            self.start_button.config(state="normal")
-
-            messagebox.showerror(
-                "Erreur",
-                f"Impossible de renommer la vidéo :\n\n{error}"
             )
 
             return

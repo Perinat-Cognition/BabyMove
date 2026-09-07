@@ -5,27 +5,21 @@ from ultralytics import YOLO
 import cv2
 
 LEFT_SIDE_KEYPOINTS = {
-    0: "Nose",
-    1: "Left Eye",
-    3: "Left Ear",
     5: "Left Shoulder",
     7: "Left Elbow",
     9: "Left Wrist",
     11: "Left Hip",
     13: "Left Knee",
-    15: "Left Ankle",
+    15: "Left Ankle"
 }
 
 RIGHT_SIDE_KEYPOINTS = {
-    0: "Nose",
-    2: "Right Eye",
-    4: "Right Ear",
     6: "Right Shoulder",
     8: "Right Elbow",
     10: "Right Wrist",
     12: "Right Hip",
     14: "Right Knee",
-    16: "Right Ankle",
+    16: "Right Ankle"
 }
 
 SUPPORTED_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")

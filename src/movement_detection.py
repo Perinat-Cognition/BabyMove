@@ -3,13 +3,21 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 
-from paths import RESULTS_DIR
+from src.paths import RESULTS_DIR
 
 SEGMENTS = {
     "upper" : ["wrist", "elbow", "shoulder"],
     "lower" : ["hip", "knee", "ankle"],
     "torso" : ["shoulder", "hip"],
 }
+
+RIGID_PAIRS = [
+    ("shoulder", "hip"),      # tronc
+    ("hip", "knee"),          # fémur
+    ("knee", "ankle"),        # tibia
+    ("shoulder", "elbow"),    # humérus
+    ("elbow", "wrist"),       # avant-bras
+]
 
 def load_data(file_path: str, direction: str, confidence_threshold: float = 0.5) -> pd.DataFrame:
     """
@@ -94,37 +102,38 @@ def pivot_data(df: pd.DataFrame) -> pd.DataFrame:
 
     return pivoted_df
 
-def normalize_data(df: pd.DataFrame, direction: str) -> pd.DataFrame:
-    """
-    Normalize the DataFrame by scaling the x and y coordinates based on the center of mass of the keypoints.
+def normalize_data(df: pd.DataFrame, direction: str,
+                   alpha: float = 0.1) -> pd.DataFrame:
+    # 1. Centre de masse (ton code actuel, simplifié)
+    torso = SEGMENTS["torso"]
+    df['center_x'] = df[[f'x_{k}' for k in torso]].mean(axis=1)
+    df['center_y'] = df[[f'y_{k}' for k in torso]].mean(axis=1)
 
-    Args:
-        df (pd.DataFrame): The input DataFrame with keypoint coordinates.
-        direction (str): The direction of movement ("left" or "right").
-    
-    Returns:
-        pd.DataFrame: The normalized DataFrame with scaled coordinates.
-    """
+    # 2. Translation
+    kp_cols = [c for c in df.columns if c.startswith(('x_', 'y_'))]
+    for kp in [c[2:] for c in kp_cols if c.startswith('x_')]:
+        df[f'x_{kp}'] -= df['center_x']
+        df[f'y_{kp}'] -= df['center_y']
 
-    # Calculate the center of mass for each frame
-    df['center_x'] = df.apply(lambda row: center_of_mass({k: (row[f'x_{k}'], row[f'y_{k}']) for k in SEGMENTS["torso"]}), axis=1).apply(lambda x: x[0])
-    df['center_y'] = df.apply(lambda row: center_of_mass({k: (row[f'x_{k}'], row[f'y_{k}']) for k in SEGMENTS["torso"]}), axis=1).apply(lambda x: x[1])
+    # 3. Scale brut + lissage
+    scale_raw = df.apply(compute_scale_raw, axis=1)
+    df['scale'] = smooth_scale(scale_raw, alpha=alpha)
 
-    # Normalize the coordinates by subtracting the center of mass
-    for keypoint in df.columns[df.columns.str.startswith('x_')].str.replace('x_', ''):
-        df[f'x_{keypoint}'] = df[f'x_{keypoint}'] - df['center_x']
-        df[f'y_{keypoint}'] = df[f'y_{keypoint}'] - df['center_y']
+    # 4. Division par le scale
+    for kp in [c[2:] for c in kp_cols if c.startswith('x_')]:
+        df[f'x_{kp}'] /= df['scale']
+        df[f'y_{kp}'] /= df['scale']
 
-    # Invert the x-coordinates for left direction
+    # 5. Miroir pour "left"
     if direction == "left":
-        for keypoint in df.columns[df.columns.str.startswith('x_')].str.replace('x_', ''):
-            df[f'x_{keypoint}'] = -df[f'x_{keypoint}']
+        for kp in [c[2:] for c in kp_cols if c.startswith('x_')]:
+            df[f'x_{kp}'] = -df[f'x_{kp}']
 
-    # Drop the center of mass columns
+    # 6. Nettoyage
     df.drop(columns=['center_x', 'center_y'], inplace=True)
+    # optionnel : garder 'scale' pour debug, sinon df.drop(columns=['scale'], inplace=True)
 
     return df
-
 def normalize_keypoint(keypoint: str) -> str:
     """
     Normalize a keypoint string by removing its side designation (e.g., 'left', 'right')
@@ -156,6 +165,49 @@ def center_of_mass(keypoints: dict) -> tuple:
 
     return (center_x, center_y)
 
+def compute_scale_raw(row: pd.Series) -> float:
+    """
+    Calcule une longueur corporelle de référence pour une frame,
+    comme la médiane des longueurs de segments rigides disponibles.
+    """
+    lengths = []
+    for a, b in RIGID_PAIRS:
+        xa, ya = row.get(f"x_{a}"), row.get(f"y_{a}")
+        xb, yb = row.get(f"x_{b}"), row.get(f"y_{b}")
+        if pd.notna(xa) and pd.notna(ya) and pd.notna(xb) and pd.notna(yb):
+            lengths.append(math.hypot(xa - xb, ya - yb))
+    if not lengths:
+        return np.nan
+    return float(np.median(lengths))
+
+def smooth_scale(scale_raw: pd.Series, alpha: float = 0.1,
+                 outlier_ratio: float = 0.2) -> pd.Series:
+    """
+    Lisse la série de scale par EMA, en ignorant les outliers.
+    - alpha : poids de la nouvelle mesure (petit = stable, lent)
+    - outlier_ratio : écart relatif toléré avant de rejeter L_t
+    """
+    smoothed = np.full(len(scale_raw), np.nan)
+    prev = np.nan
+
+    for i, L in enumerate(scale_raw.values):
+        if np.isnan(L):
+            smoothed[i] = prev  # garde la dernière valeur valide
+            continue
+
+        if np.isnan(prev):
+            # initialisation : 1ère mesure valide
+            prev = L
+        elif abs(L - prev) / prev > outlier_ratio:
+            # outlier probable → on ignore L, on garde prev
+            pass
+        else:
+            prev = alpha * L + (1 - alpha) * prev
+
+        smoothed[i] = prev
+
+    return pd.Series(smoothed, index=scale_raw.index)
+
 if __name__ == "__main__":
 
     FOLDER = RESULTS_DIR / "Cut_Crawli1_BB006_0_blur"
@@ -176,4 +228,4 @@ if __name__ == "__main__":
         """
         df.to_csv(output_path)
 
-    # save_csv(pivoted_df, FOLDER / "baby_Cut_Crawli1_BB006_0_blur_pivoted.csv")
+    save_csv(df, FOLDER / "baby_Cut_Crawli1_BB006_0_blur_normalized.csv")

@@ -380,6 +380,82 @@ def build_plot(
     # Affichage
     plt.show()
 
+def build_scale_plot(
+    input_csv: Path,
+    output_png: Path | None = None,
+) -> None:
+    """Charge le CSV et génère le graphique de l'échelle."""
+
+    # ------------------------------------------------------------------
+    # Lecture du CSV
+    # ------------------------------------------------------------------
+
+    df = pd.read_csv(input_csv)
+
+    # ------------------------------------------------------------------
+    # Données brutes
+    # ------------------------------------------------------------------
+
+    time = df["frame"]
+    scale = df["scale"]
+
+    # ------------------------------------------------------------------
+    # Création de la figure
+    # ------------------------------------------------------------------
+
+    fig, ax = plt.subplots(
+        1,
+        1,
+        figsize=(11, 4),
+    )
+
+    # Affichage direct du graphique (pas de raw)
+    ax.plot(
+        time,
+        scale,
+        color="#08519c",
+        linewidth=1.5,
+        label="scale",
+    )
+
+    ax.set_ylabel("scale")
+    ax.set_xlabel("frame")
+    ax.legend(loc="best")
+    ax.grid(True, alpha=0.25)
+
+    # ------------------------------------------------------------------
+    # Titre
+    # ------------------------------------------------------------------
+
+    fig.suptitle(
+        "Échelle (scale) en fonction du temps",
+        fontsize=14,
+    )
+
+    fig.tight_layout(
+        rect=[0, 0, 1, 0.96]
+    )
+
+    # ------------------------------------------------------------------
+    # Sauvegarde
+    # ------------------------------------------------------------------
+
+    output_dir = input_csv.parent / "graphs"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if output_png is None:
+        output_png = output_dir / "scale_trajectories.png"
+
+    fig.savefig(
+        output_png,
+        dpi=160,
+        bbox_inches="tight",
+    )
+
+    print(f"Graphique sauvegardé : {output_png}")
+
+    # Affichage
+    plt.show()
 
 def main() -> None:
     """Point d'entrée du programme."""
@@ -425,6 +501,12 @@ def main() -> None:
         help="Génère un graphique pour chaque keypoint.",
     )
 
+    parser.add_argument(
+        "--scale",
+        action="store_true",
+        help="Génère un graphique pour l'échelle (scale).",
+    )
+
     args = parser.parse_args()
 
     # ------------------------------------------------------------------
@@ -450,6 +532,13 @@ def main() -> None:
         parser.error(
             f"Fichier CSV introuvable : {input_csv}"
         )
+
+    if args.scale:
+        build_scale_plot(
+            input_csv,
+            output_png=args.output
+        )
+        return
 
     if not args.keypoint:
         keypoints = get_keypoints_from_csv(input_csv)

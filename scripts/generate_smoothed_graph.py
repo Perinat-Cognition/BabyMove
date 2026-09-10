@@ -380,8 +380,9 @@ def build_plot(
     # Affichage
     plt.show()
 
-def build_scale_plot(
+def build_single_plot(
     input_csv: Path,
+    variable: str,
     output_png: Path | None = None,
 ) -> None:
     """Charge le CSV et génère le graphique de l'échelle."""
@@ -397,7 +398,7 @@ def build_scale_plot(
     # ------------------------------------------------------------------
 
     time = df["frame"]
-    scale = df["scale"]
+    data = df[variable]
 
     # ------------------------------------------------------------------
     # Création de la figure
@@ -412,13 +413,13 @@ def build_scale_plot(
     # Affichage direct du graphique (pas de raw)
     ax.plot(
         time,
-        scale,
+        data,
         color="#08519c",
         linewidth=1.5,
-        label="scale",
+        label=variable,
     )
 
-    ax.set_ylabel("scale")
+    ax.set_ylabel(variable)
     ax.set_xlabel("frame")
     ax.legend(loc="best")
     ax.grid(True, alpha=0.25)
@@ -428,7 +429,7 @@ def build_scale_plot(
     # ------------------------------------------------------------------
 
     fig.suptitle(
-        "Échelle (scale) en fonction du temps",
+        f"{variable} en fonction du temps",
         fontsize=14,
     )
 
@@ -444,7 +445,7 @@ def build_scale_plot(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     if output_png is None:
-        output_png = output_dir / "scale_trajectories.png"
+        output_png = output_dir / f"{variable.replace(' ', '_').lower()}_trajectories.png"
 
     fig.savefig(
         output_png,
@@ -502,9 +503,10 @@ def main() -> None:
     )
 
     parser.add_argument(
-        "--scale",
-        action="store_true",
-        help="Génère un graphique pour l'échelle (scale).",
+        "--variables",
+        type=str,
+        nargs="+",
+        help="Nom de la variable à tracer.",
     )
 
     args = parser.parse_args()
@@ -533,11 +535,13 @@ def main() -> None:
             f"Fichier CSV introuvable : {input_csv}"
         )
 
-    if args.scale:
-        build_scale_plot(
-            input_csv,
-            output_png=args.output
-        )
+    if args.variables:
+        for var in args.variables:
+            build_single_plot(
+                input_csv,
+                var,
+                output_png=args.output
+            )
         return
 
     if not args.keypoint:

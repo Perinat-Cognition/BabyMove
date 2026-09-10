@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from src.movement_detection import load_data
+from src.movement.normalize_data import load_data
 
 
 def get_keypoints_from_df(df: pd.DataFrame) -> list[str]:

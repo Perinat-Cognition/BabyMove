@@ -2,9 +2,43 @@
 
 Application permettant d'analyser une vidéo avec YOLO26 Pose et de générer les positions des keypoints dans un fichier CSV.
 
+# Arborescence
+
+```
+.
+├── README.md             # Explication du projet
+├── app.py                # Interface principale
+├── aruco_markers         # Ressources des marqueurs ArUco
+├── models                # Modèles YOLO
+├── movements.md          # Documentation des mouvements
+├── requirements.txt      # Dépendances Python
+├── results               # Résultats CSV, vidéo et graphes
+├── scripts               # Scripts utilitaires
+│   ├── generate_markers.py          # Génération des marqueurs
+│   ├── generate_smoothed_graph.py   # Génération des graphes lissés
+│   └── make_sheet.py                # Création de la planche de marqueurs
+├── src                   # Code source principal
+│   ├── clean_data.py               # Nettoyage des keypoints
+│   ├── id_selection_window.py      # Sélection des IDs
+│   ├── movement_detection.py       # Détection des mouvements (branche movements)
+│   ├── paths.py                    # Gestion des chemins
+│   ├── pose_processor.py           # Post-traitement des poses
+│   └── visualize_clean.py          # Visualisation des données
+└── videos                # Vidéos à analyser
+```
+---
+
+# Installation
+
 ## 1. Installation
 
 Python 3.10 ou supérieur est recommandé.
+
+Cloner le repository :
+```sh
+git clone https://github.com/Perinat-Cognition/BabyMove.git
+cd BabyMove
+```
 
 Créer un environnement virtuel :
 

@@ -129,7 +129,10 @@ def normalize_data(df: pd.DataFrame, direction: str,
         for kp in [c[2:] for c in kp_cols if c.startswith('x_')]:
             df[f'x_{kp}'] = -df[f'x_{kp}']
 
-    # 6. Nettoyage
+    # 6. Calcul des angles corporels
+    df = calculate_body_angles(df)
+
+    # 7. Nettoyage
     df.drop(columns=['center_x', 'center_y'], inplace=True)
     # optionnel : garder 'scale' pour debug, sinon df.drop(columns=['scale'], inplace=True)
 
@@ -207,6 +210,69 @@ def smooth_scale(scale_raw: pd.Series, alpha: float = 0.1,
         smoothed[i] = prev
 
     return pd.Series(smoothed, index=scale_raw.index)
+
+def angle_from_points(A: tuple, B: tuple, C: tuple) -> float:
+    """
+    Calculate the angle at point B formed by points A, B, and C.
+
+    Args:
+        A (tuple): Coordinates of point A (x_A, y_A).
+        B (tuple): Coordinates of point B (x_B, y_B).
+        C (tuple): Coordinates of point C (x_C, y_C).
+
+    Returns:
+        float: The angle at point B in degrees.
+    """
+    # Vectors BA and BC
+    BA = (A[0] - B[0], A[1] - B[1])
+    BC = (C[0] - B[0], C[1] - B[1])
+
+    # Calculate the dot product and magnitudes
+    dot_product = BA[0] * BC[0] + BA[1] * BC[1]
+    magnitude_BA = math.sqrt(BA[0] ** 2 + BA[1] ** 2)
+    magnitude_BC = math.sqrt(BC[0] ** 2 + BC[1] ** 2)
+
+    if magnitude_BA == 0 or magnitude_BC == 0:
+        return np.nan  # Avoid division by zero
+
+    # Calculate the angle in radians and convert to degrees
+    cos_angle = dot_product / (magnitude_BA * magnitude_BC)
+    angle_rad = math.acos(np.clip(cos_angle, -1.0, 1.0))
+    angle_deg = math.degrees(angle_rad)
+
+    return angle_deg
+
+def calculate_body_angles(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calculate the angles of body segments based on keypoint coordinates.
+
+    Args:
+        df (pd.DataFrame): The input DataFrame with keypoint coordinates.
+
+    Returns:
+        pd.DataFrame: The DataFrame with additional columns for body segment angles.
+    """
+    a, b, c = SEGMENTS["upper"]
+    df[f"angle_upper"] = df.apply(
+        lambda row: angle_from_points(
+            (row[f"x_{a}"], row[f"y_{a}"]),
+            (row[f"x_{b}"], row[f"y_{b}"]),
+            (row[f"x_{c}"], row[f"y_{c}"])
+            ),
+            axis=1
+        )
+
+    a, b, c = SEGMENTS["lower"]
+    df[f"angle_lower"] = df.apply(
+        lambda row: angle_from_points(
+            (row[f"x_{a}"], row[f"y_{a}"]),
+            (row[f"x_{b}"], row[f"y_{b}"]),
+            (row[f"x_{c}"], row[f"y_{c}"])
+            ),
+            axis=1
+        )
+
+    return df
 
 if __name__ == "__main__":
 

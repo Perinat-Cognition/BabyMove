@@ -542,7 +542,6 @@ def main() -> None:
                 var,
                 output_png=args.output
             )
-        return
 
     if not args.keypoint:
         keypoints = get_keypoints_from_csv(input_csv)

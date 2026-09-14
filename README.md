@@ -14,13 +14,13 @@ Application permettant d'analyser une vidéo avec YOLO26 Pose et de générer le
 ├── requirements.txt      # Dépendances Python
 ├── results               # Résultats CSV, vidéo et graphes
 ├── scripts               # Scripts utilitaires
-│   ├── generate_markers.py          # Génération des marqueurs
-│   ├── generate_smoothed_graph.py   # Génération des graphes lissés
-│   └── make_sheet.py                # Création de la planche de marqueurs
+│   ├── generate_markers.py         # Génération des marqueurs
+│   ├── generate_smoothed_graph.py  # Génération des graphes lissés
+│   └── make_sheet.py               # Création de la planche de marqueurs
 ├── src                   # Code source principal
+│   ├── movement                    # Détection des mouvements (branche movements)
 │   ├── clean_data.py               # Nettoyage des keypoints
 │   ├── id_selection_window.py      # Sélection des IDs
-│   ├── movement_detection.py       # Détection des mouvements (branche movements)
 │   ├── paths.py                    # Gestion des chemins
 │   ├── pose_processor.py           # Post-traitement des poses
 │   └── visualize_clean.py          # Visualisation des données

@@ -21,11 +21,11 @@ jobs:
         with:
           ref: ${{ github.event.release.tag_name }}
 
-      # Installer Python 3.13
-      - name: Set up Python 3.13
+      # Installer Python 3.12
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.12"
           cache: "pip"
 
       # Installer les dépendances
@@ -37,7 +37,21 @@ jobs:
             pip install -r requirements.txt
           }
 
-          pip install pyinstaller flake8
+          pip install pyinstaller flake8 pytest
+
+      # Lancer pytest sans bloquer la release s'il n'y a aucun test
+      - name: Run pytest
+        run: |
+          pytest
+
+          if ($LASTEXITCODE -eq 5) {
+            Write-Host "pytest n'a trouvé aucun test; on continue."
+            exit 0
+          }
+
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
 
       # Vérifier le code avec Flake8
       - name: Lint with flake8

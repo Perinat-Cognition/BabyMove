@@ -1,0 +1,68 @@
+name: BabyMove Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build BabyMove
+    runs-on: windows-latest
+
+    steps:
+      # Récupérer le code correspondant à la Release
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      # Installer Python 3.13
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      # Installer les dépendances
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+
+          if (Test-Path requirements.txt) {
+            pip install -r requirements.txt
+          }
+
+          pip install pyinstaller pytest flake8
+
+      # Vérifier le code
+      - name: Lint with flake8
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      # Lancer les tests
+      - name: Test with pytest
+        run: |
+          pytest
+
+      # Compiler BabyMove
+      - name: Build BabyMove
+        run: |
+          pyinstaller --onefile --name BabyMove app.py
+
+      # Vérifier que l'exécutable existe
+      - name: Verify executable
+        run: |
+          if (!(Test-Path "dist/BabyMove.exe")) {
+            Write-Error "BabyMove.exe n'a pas été généré."
+            exit 1
+          }
+
+      # Ajouter l'exécutable à la Release GitHub
+      - name: Upload BabyMove.exe to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.release.tag_name }}
+          files: dist/BabyMove.exe

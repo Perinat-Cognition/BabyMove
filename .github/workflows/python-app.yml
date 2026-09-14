@@ -39,15 +39,21 @@ jobs:
 
           pip install pyinstaller flake8 pytest
 
-      # Lancer pytest sans bloquer la release s'il n'y a aucun test
+      # Lancer pytest uniquement si des tests existent dans le dépôt
       - name: Run pytest
         run: |
-          pytest
+          $testFiles = Get-ChildItem -Path . -Recurse -File | Where-Object {
+            $_.Name -like "test_*.py" -or
+            $_.Name -like "*_test.py" -or
+            $_.FullName -match "\\tests\\"
+          }
 
-          if ($LASTEXITCODE -eq 5) {
-            Write-Host "pytest n'a trouvé aucun test; on continue."
+          if ($testFiles.Count -eq 0) {
+            Write-Host "Aucun test détecté; pytest est ignoré."
             exit 0
           }
+
+          pytest
 
           if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE

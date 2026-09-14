@@ -5,9 +5,7 @@ from src.movement.normalize_data import load_data
 
 from src.paths import RESULTS_DIR
 
-from scipy.signal import savgol_filter
-
-def detect_movements(angles, 
+def detect_angle_changes(angles, 
                      fps=30, 
                      threshold=30.0,
                      max_window_sec=4.0):
@@ -99,7 +97,7 @@ if __name__ == "__main__":
     print(df.head())
 
     print("\nDetecting movements...")
-    movements = detect_movements(df['angle_upper'], 
+    movements = detect_angle_changes(df['angle_upper'], 
                                  fps=30, 
                                  threshold=30.0,
                                  max_window_sec=2.0)

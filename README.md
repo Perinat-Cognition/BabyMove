@@ -28,6 +28,10 @@ Application permettant d'analyser une vidéo avec YOLO26 Pose et de générer le
 ```
 ---
 
+# Pipeline graphique
+
+![Pipeline de l'application](assets/babymove_pipeline.png)
+
 # Installation
 
 ## 1. Installation

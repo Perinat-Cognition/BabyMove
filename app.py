@@ -633,7 +633,14 @@ class PoseApp(TkinterDnD.Tk):
         self.status_label.config(text="Analyse YOLO terminée.")
 
         # Vidéo générée par YOLO
-        generated_video = self.output_dir / f"{self.video_name}.mp4"
+        generated_video = next(
+            (
+                self.output_dir / f"{self.video_name}{ext}"
+                for ext in SUPPORTED_EXTENSIONS
+                if (self.output_dir / f"{self.video_name}{ext}").exists()
+            ),
+            None
+        )
 
         # Vérifier que la vidéo existe
         if not generated_video.exists():

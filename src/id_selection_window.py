@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import messagebox
 from pathlib import Path
 from PIL import Image, ImageTk, ImageOps
+from src.pose_processor import SUPPORTED_EXTENSIONS
 
 from src.paths import (
     RESULTS_DIR
@@ -85,7 +86,14 @@ class IDSelectionWindow(tk.Toplevel):
         self.parent = parent
         self.all_csv = Path(all_csv)
         self.output_dir = RESULTS_DIR / output_folder
-        self.video_path = self.output_dir / f"{output_folder}.mp4"
+        self.video_path = next(
+            (
+                self.output_dir / f"{output_folder}{ext}"
+                for ext in SUPPORTED_EXTENSIONS
+                if (self.output_dir / f"{output_folder}{ext}").exists()
+            ),
+            None
+        )
 
         self.title("Sélection du bébé")
         self.geometry("1100x800")

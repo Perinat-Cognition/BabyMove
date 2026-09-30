@@ -67,7 +67,7 @@ jobs:
       # Compiler BabyMove
       - name: Build BabyMove
         run: |
-          pyinstaller --onefile --name BabyMove app.py
+          pyinstaller --onefile --windowed --name BabyMove app.py
 
       # Vérifier que l'exécutable existe
       - name: Verify executable
